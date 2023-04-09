@@ -19,6 +19,7 @@ struct ManageAccessoriesView: View {
 
     // MARK: Bindings from main View
     @Binding var alertType: OpenHaystackMainView.AlertType?
+    @Binding var scriptOutput: String?
     @Binding var focusedAccessory: Accessory?
     @Binding var accessoryToDeploy: Accessory?
     @Binding var showESP32DeploySheet: Bool
@@ -48,6 +49,8 @@ struct ManageAccessoriesView: View {
             switch sheetType {
             case .esp32Install:
                 ESP32InstallSheet(accessory: self.$accessoryToDeploy, alertType: self.$alertType)
+            case .nrfDeviceInstall:
+                NRFInstallSheet(accessory: self.$accessoryToDeploy, alertType: self.$alertType, scriptOutput: self.$scriptOutput)
             case .deployFirmware:
                 self.selectTargetView
             }
@@ -56,6 +59,7 @@ struct ManageAccessoriesView: View {
 
     /// Accessory List view.
     var accessoryList: some View {
+
         List(self.accessories, id: \.self, selection: $focusedAccessory) { accessory in
             AccessoryListEntry(
                 accessory: accessory,
@@ -74,9 +78,10 @@ struct ManageAccessoriesView: View {
                 alertType: self.$alertType,
                 delete: self.delete(accessory:),
                 deployAccessoryToMicrobit: self.deploy(accessory:),
-                zoomOn: { self.focusedAccessory = $0 })
+                zoomOn: { self.focusedAccessory = $0 }
+            )
         }
-        .listStyle(SidebarListStyle())
+        .listStyle(PlainListStyle())
 
     }
 
@@ -145,6 +150,13 @@ struct ManageAccessoriesView: View {
                     }
                 )
                 .buttonStyle(LargeButtonStyle())
+
+                Button(
+                    "NRF Device",
+                    action: {
+                        self.sheetShown = .nrfDeviceInstall
+                    }
+                ).buttonStyle(LargeButtonStyle())
 
                 Button(
                     "Cancel",
@@ -255,6 +267,7 @@ struct ManageAccessoriesView: View {
             return self.rawValue
         }
         case esp32Install
+        case nrfDeviceInstall
         case deployFirmware
     }
 }
@@ -263,11 +276,22 @@ struct ManageAccessoriesView_Previews: PreviewProvider {
 
     @State static var accessories = PreviewData.accessories
     @State static var alertType: OpenHaystackMainView.AlertType?
+    @State static var scriptOutput: String?
     @State static var focussed: Accessory?
     @State static var deploy: Accessory?
     @State static var showESPSheet: Bool = true
 
     static var previews: some View {
-        ManageAccessoriesView(alertType: self.$alertType, focusedAccessory: self.$focussed, accessoryToDeploy: self.$deploy, showESP32DeploySheet: self.$showESPSheet)
+        ManageAccessoriesView(
+            alertType: self.$alertType, scriptOutput: self.$scriptOutput, focusedAccessory: self.$focussed, accessoryToDeploy: self.$deploy,
+            showESP32DeploySheet: self.$showESPSheet)
+    }
+}
+
+//FIXME: This is a workaround, because the List with Default style (and clear background) started to crop the rows on macOS 11.3
+extension NSTableView {
+    open override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        self.backgroundColor = .clear
     }
 }

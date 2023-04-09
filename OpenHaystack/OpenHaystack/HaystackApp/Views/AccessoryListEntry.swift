@@ -36,6 +36,15 @@ struct AccessoryListEntry: View {
         .font(.footnote)
     }
 
+    func updateIntervalView() -> some View {
+        let intervalFormatter = DateComponentsFormatter()
+        intervalFormatter.unitsStyle = .abbreviated
+
+        return Group {
+            Text("Key derivation interval: \(intervalFormatter.string(from: accessory.updateInterval)!)")
+        }.font(.footnote)
+    }
+
     var body: some View {
 
         HStack {
@@ -51,6 +60,9 @@ struct AccessoryListEntry: View {
                         .font(.headline)
                 }
                 self.timestampView()
+                if accessory.usesDerivation {
+                    self.updateIntervalView()
+                }
             }
 
             Spacer()
@@ -64,20 +76,46 @@ struct AccessoryListEntry: View {
                 .fill(accessory.isNearby ? Color.green : accessory.isActive ? Color.orange : Color.red)
                 .frame(width: 8, height: 8)
         }
+        .listRowBackground(Color.clear)
         .padding(EdgeInsets(top: 5, leading: 0, bottom: 5, trailing: 0))
         .contextMenu {
             Button("Delete", action: { self.delete(accessory) })
-            Divider()
             Button("Rename", action: { self.editingName = true })
+            Menu("Key derivation options") {
+                Button("Toggle key derivation", action: { accessory.usesDerivation = !accessory.usesDerivation })
+                Button("Reset derivation state", action: { accessory.resetDerivationState() })
+            }
             Divider()
-            Button("Copy advertisment key (Base64)", action: { self.copyPublicKey(of: accessory) })
             Button("Copy key ID (Base64)", action: { self.copyPublicKeyHash(of: accessory) })
+            Menu("Copy advertisement key") {
+                Button("Base64", action: { self.copyAdvertisementKeyB64(of: accessory) })
+                Button("Byte array", action: { self.copyAdvertisementKey(escapedString: false) })
+                Button("Escaped string", action: { self.copyAdvertisementKey(escapedString: true) })
+            }
+            Menu("Copy symmetric and uncompressed public key") {
+                Button("Base64", action: { self.copySymmetricAndPublicKeyBase64(of: accessory) })
+                Button("Escaped string", action: { self.copySymmetricAndPublicKey(of: accessory) })
+            }
             Divider()
             Button("Mark as \(accessory.isDeployed ? "deployable" : "deployed")", action: { accessory.isDeployed.toggle() })
+            
+            Button("Copy private Key B64", action: { copyPrivateKey(accessory: accessory) })
         }
     }
 
     func copyPublicKey(of accessory: Accessory) {
+        do {
+            let publicKey = try accessory.getAdvertisementKey()
+            let pasteboard = NSPasteboard.general
+            pasteboard.prepareForNewContents(with: .currentHostOnly)
+            pasteboard.setString(publicKey.base64EncodedString(), forType: .string)
+        } catch {
+            os_log("Failed extracing public key %@", String(describing: error))
+            assert(false)
+        }
+    }
+
+    func copyAdvertisementKeyB64(of accessory: Accessory) {
         do {
             let publicKey = try accessory.getAdvertisementKey()
             let pasteboard = NSPasteboard.general
@@ -101,6 +139,67 @@ struct AccessoryListEntry: View {
         }
     }
 
+    func copyAdvertisementKey(escapedString: Bool) {
+        do {
+            let publicKey = try self.accessory.getAdvertisementKey()
+            let keyByteArray = [UInt8](publicKey)
+
+            if escapedString {
+                let string = keyByteArray.map { "\\x\(String($0, radix: 16))" }.joined()
+                let pasteboard = NSPasteboard.general
+                pasteboard.prepareForNewContents(with: .currentHostOnly)
+                pasteboard.setString(string, forType: .string)
+            } else {
+                let string = keyByteArray.map { "0x\(String($0, radix: 16))" }.joined(separator: ", ")
+                let pasteboard = NSPasteboard.general
+                pasteboard.prepareForNewContents(with: .currentHostOnly)
+                pasteboard.setString(string, forType: .string)
+            }
+        } catch {
+            os_log("Failed extracing public key %@", String(describing: error))
+            assert(false)
+        }
+    }
+
+    func copySymmetricAndPublicKey(of accessory: Accessory) {
+        do {
+            let symmetricKey = accessory.symmetricKey
+            let publicKey = try accessory.getUncompressedPublicKey()
+            let publicKeyString = [UInt8](publicKey).map { "\\x\(String($0, radix: 16))" }.joined()
+            let symmetricKeyString = [UInt8](symmetricKey).map { "\\x\(String($0, radix: 16))" }.joined()
+
+            let pasteboard = NSPasteboard.general
+            pasteboard.prepareForNewContents(with: .currentHostOnly)
+            pasteboard.setString("Symmetric key: \(symmetricKeyString)\n Uncompressed public key: \(publicKeyString) ", forType: .string)
+        } catch {
+            os_log("Failed extracing public key %@", String(describing: error))
+            assert(false)
+        }
+    }
+
+    func copySymmetricAndPublicKeyBase64(of accessory: Accessory) {
+        do {
+            let symmetricKey = accessory.symmetricKey
+            let publicKey = try accessory.getUncompressedPublicKey()
+
+            let pasteboard = NSPasteboard.general
+            pasteboard.prepareForNewContents(with: .currentHostOnly)
+            pasteboard.setString("Symmetric key: \(symmetricKey.base64EncodedString())\n Uncompressed public key: \(publicKey.base64EncodedString()) ", forType: .string)
+        } catch {
+            os_log("Failed extracing public key %@", String(describing: error))
+            assert(false)
+        }
+    }
+    
+    func copyPrivateKey(accessory: Accessory) {
+        let privateKey = accessory.privateKey
+        let keyB64 = privateKey.base64EncodedString()
+        
+        let pasteboard = NSPasteboard.general
+        pasteboard.prepareForNewContents(with: .currentHostOnly)
+        pasteboard.setString(keyB64, forType: .string)
+    }
+
     struct AccessoryListEntry_Previews: PreviewProvider {
         @StateObject static var accessory = PreviewData.accessories.first!
         @State static var alertType: OpenHaystackMainView.AlertType?
@@ -121,6 +220,7 @@ struct AccessoryListEntry: View {
                         get: { accessory.name },
                         set: { accessory.name = $0 }
                     ),
+
                     alertType: self.$alertType,
                     delete: { _ in () },
                     deployAccessoryToMicrobit: { _ in () },

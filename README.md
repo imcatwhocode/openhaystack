@@ -19,6 +19,7 @@ OpenHaystack is a framework for tracking personal Bluetooth devices via Apple's 
   - [Finding](#finding-3)
   - [Searching](#searching-4)
 - [How to track other Bluetooth devices?](#how-to-track-other-bluetooth-devices)
+- [OpenHaystack Mobile](#openhaystack-mobile)
 - [Authors](#authors)
 - [References](#references)
 - [License](#license)
@@ -110,11 +111,20 @@ Feel free to port OpenHaystack to other devices that support Bluetooth Low Energ
 
 | Platform | Tested on | Deploy via app | Comment |
 |----------|-----------|:--------------:|---------|
-| [Nordic nRF51](Firmware/Microbit_v1) | BBC micro:bit v1 | ✓ | Only supports nRF51288 at this time (see issue #6). |
+| [Nordic nRF51](Firmware/Microbit_v1) | BBC micro:bit v1 | ✓ | Only supports nRF51822 at this time (see issue #6). |
 | [Espressif ESP32](Firmware/ESP32) | SP32-WROOM, ESP32-WROVER | ✓ | Deployment can take up to 3 minutes. Requires Python 3. Thanks **@fhessel**. |
 | [Linux HCI](Firmware/Linux_HCI) | Raspberry Pi 4 w/ Raspbian | | Should support any Linux machine. |
 
 ![Setup](Resources/Setup.jpg)
+
+## OpenHaystack Mobile
+OpenHaystack Mobile is a complete reimplementation of the OpenHaystack macOS application for smartphones. The app provides the same functionality to create and track accessories and aims to increase the usability, especially for new users. In contrast to the macOS application, the location reports cannot be fetched directly on the smartphone, so the app requires a proxy server hosted on Mac hardware to access the Find My network. The proxy server can be accessed over a network by multiple users simultaneously.
+
+To connect to your proxy server set the correct URL in: openhaystack-mobile/lib/findMy/reports_fetcher.dart
+
+<img width="300" src="./Resources/mobile-map-view.png"> <img width="300" src="./Resources/mobile-accessory-history.png">
+
+OpenHaystack Mobile is built with the cross-platform [Flutter framework](https://flutter.dev/) and currently runs on Android and iOS. More information about the app and usage instructions can be found in the [openhaystack-mobile](openhaystack-mobile) folder of this repository.
 
 ## Authors
 
@@ -123,7 +133,8 @@ Feel free to port OpenHaystack to other devices that support Bluetooth Low Energ
 
 ## References
 
-- Alexander Heinrich, Milan Stute, Tim Kornhuber, Matthias Hollick. **Who Can _Find My_ Devices? Security and Privacy of Apple's Crowd-Sourced Bluetooth Location Tracking System.** _Proceedings on Privacy Enhancing Technologies (PoPETs)_, 2021. [📄 Preprint](https://arxiv.org/abs/2103.02282).
+- Alexander Heinrich, Milan Stute, Tim Kornhuber, Matthias Hollick. **Who Can _Find My_ Devices? Security and Privacy of Apple's Crowd-Sourced Bluetooth Location Tracking System.** _Proceedings on Privacy Enhancing Technologies (PoPETs)_, 2021. [doi:10.2478/popets-2021-0045](https://doi.org/10.2478/popets-2021-0045) [📄 Paper](https://www.petsymposium.org/2021/files/papers/issue3/popets-2021-0045.pdf) [📄 Preprint](https://arxiv.org/abs/2103.02282).
+- Alexander Heinrich, Milan Stute, and Matthias Hollick. **DEMO: OpenHaystack: A Framework for Tracking Personal Bluetooth Devices via Apple’s Massive Find My Network.** _14th ACM Conference on Security and Privacy in Wireless and Mobile (WiSec ’21)_, 2021.
 - Tim Kornhuber. **Analysis of Apple's Crowd-Sourced Location Tracking System.** _Technical University of Darmstadt_, Master's thesis, 2020.
 - Apple Inc. **Find My Network Accessory Specification – Developer Preview – Release R3.** 2020. [📄 Download](https://developer.apple.com/find-my/).
 

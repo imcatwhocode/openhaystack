@@ -32,7 +32,11 @@ class FindMyController: ObservableObject {
         self.devices = devices
 
         // Decrypt the reports with the imported keys
-        DispatchQueue.global(qos: .background).async {
+        DispatchQueue.global(qos: .background).async { [weak self] in
+            guard let self = self else {
+                completion()
+                return
+            }
 
             var d = self.devices
             // Add the reports to the according device by finding the right key for the report
@@ -57,8 +61,8 @@ class FindMyController: ObservableObject {
             }
 
             // Decrypt the reports
-            self.decryptReports {
-                self.exportDevices()
+            self.decryptReports { [weak self] in
+                self?.exportDevices()
                 DispatchQueue.main.async {
                     completion()
                 }
@@ -108,7 +112,11 @@ class FindMyController: ObservableObject {
 
     func fetchReports(with searchPartyToken: Data, completion: @escaping (Error?) -> Void) {
 
-        DispatchQueue.global(qos: .background).async {
+        DispatchQueue.global(qos: .background).async { [weak self] in
+            guard let self = self else {
+                completion(FindMyErrors.objectReleased)
+                return
+            }
             let fetchReportGroup = DispatchGroup()
 
             let fetcher = ReportsFetcher()
@@ -166,7 +174,11 @@ class FindMyController: ObservableObject {
                     }
                 #endif
 
-                DispatchQueue.main.async {
+                DispatchQueue.main.async { [weak self] in
+                    guard let self = self else {
+                        completion(FindMyErrors.objectReleased)
+                        return
+                    }
                     self.devices = devices
 
                     self.decryptReports {
@@ -228,4 +240,5 @@ class FindMyController: ObservableObject {
 
 enum FindMyErrors: Error {
     case decodingPlistFailed(message: String)
+    case objectReleased
 }

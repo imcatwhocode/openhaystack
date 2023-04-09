@@ -18,17 +18,17 @@ defaults:
 
 jobs:
   format-swift:
-    runs-on: macos-latest
+    runs-on: macos-12
     steps:
       - name: "Checkout code"
         uses: actions/checkout@v2
       - name: "Install swift-format"
         run: brew install swift-format
       - name: "Run swift-format"
-        run: swift-format --recursive --mode lint .
+        run: swift-format lint --recursive .
 
   format-objc:
-    runs-on: macos-latest
+    runs-on: macos-12
     steps:
       - name: "Checkout code"
         uses: actions/checkout@v2
@@ -38,16 +38,16 @@ jobs:
         run: clang-format -n **/*.{h,m}
 
   build-app:
-    runs-on: macos-latest
+    runs-on: macos-12
     needs:
       - format-swift
       - format-objc
     steps:
       - name: "Checkout code"
         uses: actions/checkout@v2
-      - name: "Select Xcode 12"
+      - name: "Select Xcode 13"
         uses: devbotsxyz/xcode-select@v1
         with:
-          version: "12"
+          version: "13"
       - name: "Archive project"
         run: xcodebuild archive -scheme ${APP} -configuration release -archivePath ${APP}.xcarchive
